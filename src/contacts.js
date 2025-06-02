@@ -1,5 +1,5 @@
-
 import { newElement, showPopup, saveData, createSearchInput } from './component.js';
+
 
 export function showAddContactForm(discussions, groupes, layout, sidebar) {
   const contactFirstNameInput = newElement("input", "", {
@@ -79,7 +79,7 @@ export function showAddContactForm(discussions, groupes, layout, sidebar) {
     });
 
     if (maxIndex > 0) {
-      finalName = `(${maxIndex}) ${baseName}`;
+      finalName = ` ${baseName} (${maxIndex})`;
     }
 
     while (discussions.some(d =>
@@ -103,14 +103,17 @@ export function showAddContactForm(discussions, groupes, layout, sidebar) {
     });
 
     saveData(discussions, groupes);
-    window.location.reload();
+
+refreshMessagesView();
   });
+
+  const enhancedSearchInput = createEnhancedSearchInput("Recherche", discussions);
 
   const formSidebar = newElement("div", [
     newElement("div", [
       newElement("h2", "Contacts", { class: "text-lg font-semibold" })
     ], { class: "mb-4" }),
-    createSearchInput("Recherche"),
+    enhancedSearchInput,
     form
   ], {
     class: ["w-[30%]", "h-full", "bg-zinc-200", "p-4", "flex", "flex-col", "gap-4"]
@@ -119,37 +122,281 @@ export function showAddContactForm(discussions, groupes, layout, sidebar) {
   layout.replaceChild(formSidebar, layout.children[1]);
 }
 
-export function showArchives(discussions, layout, openDiscussion) {
+
+
+function createEnhancedSearchInput(placeholder, discussions) {
+  const searchInput = newElement("input", "", {
+    type: "text",
+    placeholder: placeholder,
+    class: ["w-full", "p-2", "rounded", "border", "border-gray-300", "mb-2"]
+  });
+
+  const resultsContainer = newElement("div", [], {
+    class: "flex flex-col gap-2 max-h-64 overflow-y-auto bg-white rounded border p-2",
+    style: { display: "none" }
+  });
+
+  let isShowingAlphabetical = false;
+
+  function performSearch(query) {
+    const searchValue = query.toLowerCase().trim();
+    
+    if (searchValue === '*') {
+      showAlphabeticalList();
+      return;
+    }
+    
+    if (!searchValue) {
+      hideResults();
+      return;
+    }
+
+    const filteredContacts = discussions
+      .filter(d => !d.archived) 
+      .filter(d => {
+        const fullName = `${d.firstName || ''} ${d.name || ''}`.toLowerCase();
+        const firstName = (d.firstName || '').toLowerCase();
+        const lastName = (d.name || '').toLowerCase();
+        const phone = (d.phone || '').toLowerCase();
+        
+        return fullName.includes(searchValue) || 
+               firstName.includes(searchValue) || 
+               lastName.includes(searchValue) || 
+               phone.includes(searchValue);
+      });
+
+    showSearchResults(filteredContacts);
+  }
+
+  function showAlphabeticalList() {
+    isShowingAlphabetical = true;
+    
+    const sortedContacts = discussions
+      .filter(d => !d.archived)
+      .sort((a, b) => {
+        const nameA = `${a.firstName || ''} ${a.name || ''}`.trim().toLowerCase();
+        const nameB = `${b.firstName || ''} ${b.name || ''}`.trim().toLowerCase();
+        return nameA.localeCompare(nameB, 'fr', { sensitivity: 'base' });
+      });
+
+    resultsContainer.innerHTML = '';
+    
+    const title = newElement("div", [
+      newElement("i", "", { class: "fas fa-sort-alpha-down mr-2 text-yellow-500" }),
+      newElement("span", "Contacts par ordre alphabétique", { class: "font-medium text-sm" })
+    ], {
+      class: "flex items-center mb-2 p-2 bg-yellow-50 rounded border-b"
+    });
+    resultsContainer.appendChild(title);
+
+    if (sortedContacts.length === 0) {
+      const noResults = newElement("div", "Aucun contact trouvé", {
+        class: "text-gray-500 text-center p-4 italic"
+      });
+      resultsContainer.appendChild(noResults);
+    } else {
+      sortedContacts.forEach((contact, index) => {
+        const contactItem = createContactItem(contact, index + 1);
+        resultsContainer.appendChild(contactItem);
+      });
+    }
+
+    resultsContainer.style.display = "block";
+  }
+
+  function showSearchResults(contacts) {
+    isShowingAlphabetical = false;
+    resultsContainer.innerHTML = '';
+
+    if (contacts.length === 0) {
+      const noResults = newElement("div", "Aucun contact trouvé", {
+        class: "text-gray-500 text-center p-4 italic"
+      });
+      resultsContainer.appendChild(noResults);
+    } else {
+      const title = newElement("div", [
+        newElement("i", "", { class: "fas fa-search mr-2 text-blue-500" }),
+        newElement("span", `${contacts.length} contact(s) trouvé(s)`, { class: "font-medium text-sm" })
+      ], {
+        class: "flex items-center mb-2 p-2 bg-blue-50 rounded border-b"
+      });
+      resultsContainer.appendChild(title);
+
+      contacts.forEach((contact, index) => {
+        const contactItem = createContactItem(contact, index + 1);
+        resultsContainer.appendChild(contactItem);
+      });
+    }
+
+    resultsContainer.style.display = "block";
+  }
+
+  function createContactItem(contact, position) {
+    const fullName = `${contact.firstName || ''} ${contact.name || ''}`.trim();
+    const initial = contact.firstName ? contact.firstName[0].toUpperCase() : "?";
+    
+    return newElement("div", [
+      newElement("div", [
+        newElement("div", initial, { 
+          class: "w-8 h-8 rounded-full bg-yellow-400 text-white flex items-center justify-center text-xs font-bold mr-3"
+        }),
+        newElement("div", [
+          newElement("div", fullName || "Contact sans nom", { 
+            class: "font-medium text-sm" 
+          }),
+          newElement("div", contact.phone || "Pas de numéro", { 
+            class: "text-xs text-gray-500" 
+          }),
+          contact.lastMsg ? newElement("div", `"${contact.lastMsg}"`, { 
+            class: "text-xs text-gray-400 italic mt-1" 
+          }) : null
+        ].filter(Boolean), { class: "flex-1" }),
+        newElement("div", [
+          newElement("div", `#${position}`, { 
+            class: "text-xs text-gray-400 font-mono" 
+          }),
+          contact.online ? newElement("div", "●", { 
+            class: "text-green-500 text-xs text-center" 
+          }) : newElement("div", "○", { 
+            class: "text-gray-300 text-xs text-center" 
+          })
+        ], { class: "text-right" })
+      ], {
+        class: "flex items-center"
+      })
+    ], {
+      class: "p-2 hover:bg-gray-50 rounded cursor-pointer border-b border-gray-100 last:border-b-0",
+      onclick: () => {
+        console.log("Contact sélectionné:", contact);
+        hideResults();
+        searchInput.value = fullName;
+      }
+    });
+  }
+
+  function hideResults() {
+    resultsContainer.style.display = "none";
+    isShowingAlphabetical = false;
+  }
+
+  searchInput.addEventListener("input", (e) => {
+    performSearch(e.target.value);
+  });
+
+  searchInput.addEventListener("blur", () => {
+    setTimeout(hideResults, 150);
+  });
+
+  searchInput.addEventListener("focus", () => {
+    if (searchInput.value.trim()) {
+      performSearch(searchInput.value);
+    }
+  });
+
+  searchInput.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      hideResults();
+      searchInput.value = "";
+    }
+  });
+
+  const searchContainer = newElement("div", [
+    searchInput,
+    resultsContainer
+  ], {
+    class: "relative"
+  });
+
+  return searchContainer;
+}
+
+function createContactAvatar(contact) {
+  const initial = contact.firstName ? contact.firstName[0].toUpperCase() : (contact.name ? contact.name[0].toUpperCase() : "?");
+  return newElement("div", initial, { 
+    class: "w-10 h-10 rounded-full bg-yellow-400 text-white flex items-center justify-center text-sm font-bold mr-3"
+  });
+}
+
+function createGroupAvatar(group) {
+  const initial = group.name ? group.name[0].toUpperCase() : "G";
+  return newElement("div", initial, { 
+    class: "w-10 h-10 rounded-full bg-blue-400 text-white flex items-center justify-center text-sm font-bold mr-3"
+  });
+}
+
+export function showArchives(discussions, layout, openDiscussion, groupes = [], openGroupDiscussion) {
   const title = newElement("h2", "Archives", {
     class: "text-lg font-semibold mb-2"
   });
 
-  const archivedDiscussions = discussions.filter(d => d.archived);
+  const archivedDiscussions = discussions.filter(d => d.archived).reverse();
+
+  const archivedGroupes = groupes.filter(g => g.archived).reverse();
 
   const archiveList = archivedDiscussions.map(d =>
     newElement("div", [
-      newElement("div", "", { class: "w-10 h-10 rounded-full bg-gray-400 mr-3" }),
+      createContactAvatar(d),
       newElement("div", [
         newElement("strong", d.firstName ? `${d.firstName} ${d.name || ""}`.trim() : d.name),
         newElement("p", d.lastMsg, { class: "text-sm text-gray-500" })
-      ])
+      ]),
+      newElement("button", newElement("i", "", { class: "fas fa-box-open" }), {
+        class: "ml-auto text-black hover:text-yellow-500 transition bg-transparent border-none shadow-none p-1",
+        title: "Désarchiver",
+        style: { background: "none", border: "none" },
+        onclick: (e) => {
+          e.stopPropagation();
+          d.archived = false;
+          saveData(discussions, groupes);
+          showArchives(discussions, layout, openDiscussion, groupes, openGroupDiscussion);
+        }
+      })
     ], {
       class: "flex items-center gap-2 bg-white p-2 rounded hover:bg-gray-100 mb-2 cursor-pointer",
       onclick: () => openDiscussion(d)
     })
   );
 
+  const archiveGroupList = archivedGroupes.map(g =>
+    newElement("div", [
+      createGroupAvatar(g),
+      newElement("div", [
+        newElement("strong", g.name),
+        newElement("p", g.description || "", { class: "text-sm text-gray-500" })
+      ]),
+      newElement("button", newElement("i", "", { class: "fas fa-box-open" }), {
+        class: "ml-auto text-black hover:text-yellow-500 transition bg-transparent border-none shadow-none p-1",
+        title: "Désarchiver",
+        style: { background: "none", border: "none" },
+        onclick: (e) => {
+          e.stopPropagation();
+          g.archived = false;
+          saveData(discussions, groupes);
+          showArchives(discussions, layout, openDiscussion, groupes, openGroupDiscussion);
+        }
+      })
+    ], {
+      class: "flex items-center gap-2 bg-white p-2 rounded hover:bg-gray-100 mb-2 cursor-pointer",
+      onclick: () => openGroupDiscussion(g)
+    })
+  );
+
   const archiveSearchInput = createSearchInput("Recherche", (value) => {
-    archiveList.forEach(item => {
+    [...archiveList, ...archiveGroupList].forEach(item => {
       const name = item.querySelector("strong").textContent.toLowerCase();
       item.style.display = name.includes(value) ? "" : "none";
     });
   });
 
+  const scrollableList = newElement("div", [...archiveList, ...archiveGroupList], {
+    class: "flex flex-col gap-2 overflow-y-auto",
+    style: { maxHeight: "70vh", overflowY: "auto" }
+  });
+
   const archivesSidebar = newElement("div", [
     title,
     archiveSearchInput,
-    newElement("div", archiveList, { class: "flex flex-col gap-2" })
+    scrollableList
   ], {
     class: ["w-[30%]", "h-full", "bg-zinc-200", "p-4", "flex", "flex-col", "gap-4"]
   });
@@ -157,8 +404,13 @@ export function showArchives(discussions, layout, openDiscussion) {
   layout.replaceChild(archivesSidebar, layout.children[1]);
 
   const archivesContent = newElement("div", [
-    newElement("div", "Sélectionnez une discussion archivée pour la consulter.", {
-      class: "text-gray-500 text-center m-auto text-lg"
+      newElement("div", [
+      newElement("i", "", { class: "fas fa-comments text-gray-600 text-6xl mb-6" }),
+      newElement("h3", "Commencez a discuter", { class: "text-xl font-semibold text-gray-600 mb-2" }),
+      newElement("p", "Sélectionnez un contact archivé  pour commencer à discuter", { class: "text-gray-500 text-center" }),
+      newElement("p", "ou créez un nouveau contact pour discuter", { class: "text-gray-400 text-sm mt-2" })
+    ], {
+      class: "flex flex-col items-center justify-center text-center"
     })
   ], {
     class: [

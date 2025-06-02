@@ -366,18 +366,3 @@ export function createStackedAvatars(members, maxVisible = 3) {
   });
 }
 
-/*
-
-// Dans discussions.js :
-const avatar = createAvatarWithStatus(discussion.firstName, discussion.name, discussion.online);
-
-// Dans groups.js :
-const groupAvatar = createGroupAvatar(group.name, group.members);
-
-// Pour une liste de membres :
-const memberAvatars = createStackedAvatars(group.membersList);
-
-// Pour un profil :
-const profileAvatar = createLargeAvatar(user.firstName, user.name);
-
-*/
