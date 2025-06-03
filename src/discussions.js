@@ -299,21 +299,6 @@ export const openDiscussion = requireAuth((discussion, layout, mainContent, disc
       }),
       newElement("span", 
         newElement("div", 
-          newElement("i", "", { class: "fas fa-ban text-sm text-black" }), 
-          { class: "w-8 h-8 rounded-full border-2 border-black flex items-center justify-center hover:bg-gray-100 transition ml-3" }
-        ), {
-        class: "cursor-pointer",
-        title: "Bloquer le contact",
-        onclick: () => {
-          confirmAction("Bloquer ce contact ?", () => {
-            discussion.blocked = true;
-            saveUserData(discussions, groupes, currentUser.id);
-            openDiscussion(discussion, layout, mainContent, discussions, groupes);
-          });
-        }
-      }),
-      newElement("span", 
-        newElement("div", 
           newElement("i", "", { class: "fas fa-user-times text-sm text-red-500" }), 
           { class: "w-8 h-8 rounded-full border-2 border-red-500 flex items-center justify-center hover:bg-red-50 transition ml-3" }
         ), {
@@ -326,7 +311,6 @@ export const openDiscussion = requireAuth((discussion, layout, mainContent, disc
               discussions.splice(idx, 1);
               saveUserData(discussions, groupes, currentUser.id);
               import('./main.js').then(m => m.showMainInterface());
-              layout.replaceChild(mainContent, layout.children[2]);
             }
           });
         }
