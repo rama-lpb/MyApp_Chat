@@ -322,7 +322,6 @@ function showMessages() {
   );
   layout.replaceChild(sidebar, layout.children[1]);
   layout.replaceChild(mainContent, layout.children[2]);
-  showActionNotification("Section Messages affichée", "info");
 }
 
 function initializeApp() {
@@ -356,15 +355,12 @@ function showMainInterface() {
   setupMenuEvents();
 }
 
-// Fonction améliorée pour l'ajout de contact
 function showAddContactFormImproved() {
   selectMenu(5);
   
   try {
     showAddContactForm(discussions, groupes, layout, sidebar);
-    showActionNotification("Formulaire d'ajout de contact ouvert", "info");
     
-    // Sauvegarder après ajout réussi
     setTimeout(() => {
       if (authManager.isLoggedIn()) {
         const currentUser = authManager.getCurrentUser();
@@ -389,13 +385,11 @@ function setupMenuEvents() {
     showGroupes(groupes, discussions, layout, mainContent, (group) => 
       openGroupDiscussionWithCloseButton(group, layout, discussions, groupes)
     );
-    showActionNotification("Section Groupes affichée", "info");
   });
 
   menuButtons[2].addEventListener("click", () => {
     selectMenu(2);
     showDiscussionsMulti(discussions, groupes, layout);
-    showActionNotification("Vue Discussions multiples affichée", "info");
   });
 
   menuButtons[3].addEventListener("click", () => {
@@ -405,7 +399,6 @@ function setupMenuEvents() {
       groupes,
       (group) => openGroupDiscussionWithCloseButton(group, layout, discussions, groupes)
     );
-    showActionNotification("Section Archives affichée", "info");
   });
 
   menuButtons[4].addEventListener("click", () => {
@@ -421,7 +414,6 @@ function setupMenuEvents() {
         openGroupDiscussionWithCloseButton(group, layout, discussions, groupes);
       }
     );
-    showActionNotification("Section Brouillons affichée", "info");
   });
 
   menuButtons[5].addEventListener("click", showAddContactFormImproved);
@@ -449,3 +441,7 @@ window.addEventListener('beforeunload', () => {
     saveUserData(discussions, groupes, currentUser.id);
   }
 });
+
+export function refreshApp() {
+  showMainInterface();
+}

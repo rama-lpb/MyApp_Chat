@@ -843,3 +843,5 @@ function showGroupInfo(group, discussions, groupes, layout, openGroupDiscussion)
     };
   }
 }
+
+import('./main.js').then(m => m.showMainInterface());

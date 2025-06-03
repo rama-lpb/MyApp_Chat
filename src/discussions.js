@@ -170,18 +170,23 @@ function createEnhancedDiscussionSearch(discussions, openDiscussion, discussions
 }
 
 function createModernContactItem(discussion, openDiscussion, showIndex = false, index = 0) {
-  const fullName = `${discussion.firstName || ''} ${discussion.name || ''}`.trim();
-  const initial = discussion.firstName ? discussion.firstName[0].toUpperCase() : (discussion.name ? discussion.name[0].toUpperCase() : "?");
   
+  const displayName = `${discussion.firstName || ''} ${discussion.name || ''}`.trim();
+
+  const cleanName = (discussion.name || "").replace(/[\s(]*\d+\)?$/, "").trim();
+  const initial =
+    (discussion.firstName ? discussion.firstName[0].toUpperCase() : "") +
+    (cleanName ? cleanName[0].toUpperCase() : "");
+
   const draft = draftManager.getDraft('contact', discussion.name || discussion.firstName);
 
   return newElement("div", [
     newElement("div", [
-      newElement("div", initial, { 
+      newElement("div", initial || "?", { 
         class: "w-10 h-10 rounded-full bg-yellow-400 text-white flex items-center justify-center text-sm font-bold mr-3"
       }),
       newElement("div", [
-        newElement("div", fullName || discussion.name || "Contact sans nom", { 
+        newElement("div", displayName || cleanName || "Contact sans nom", { 
           class: "font-medium text-sm text-gray-800" 
         }),
         discussion.phone ? newElement("div", discussion.phone, { 
@@ -260,7 +265,11 @@ export const openDiscussion = requireAuth((discussion, layout, mainContent, disc
       class: "flex items-center"
     }),
     newElement("div", [
-      newElement("span", newElement("i", "", { class: "fas fa-trash-alt text-sm" }), {
+      newElement("span", 
+        newElement("div", 
+          newElement("i", "", { class: "fas fa-trash-alt text-sm text-orange-500" }), 
+          { class: "w-8 h-8 rounded-full border-2 border-orange-500 flex items-center justify-center hover:bg-orange-50 transition" }
+        ), {
         class: "cursor-pointer",
         title: "Supprimer tous les messages",
         onclick: () => {
@@ -273,19 +282,27 @@ export const openDiscussion = requireAuth((discussion, layout, mainContent, disc
           });
         }
       }),
-      newElement("span", newElement("i", "", { class: "fas fa-archive text-sm" }), {
-        class: "cursor-pointer ml-3",
+      newElement("span", 
+        newElement("div", 
+          newElement("i", "", { class: "fas fa-archive text-sm text-gray-500" }), 
+          { class: "w-8 h-8 rounded-full border-2 border-gray-400 flex items-center justify-center hover:bg-gray-50 transition ml-3" }
+        ), {
+        class: "cursor-pointer",
         title: "Archiver le contact",
         onclick: () => {
           confirmAction("Archiver ce contact ?", () => {
             discussion.archived = true;
             saveUserData(discussions, groupes, currentUser.id);
-            layout.replaceChild(mainContent, layout.children[2]);
+            import('./main.js').then(m => m.showMainInterface());
           });
         }
       }),
-      newElement("span", newElement("i", "", { class: "fas fa-ban text-sm" }), {
-        class: "cursor-pointer ml-3",
+      newElement("span", 
+        newElement("div", 
+          newElement("i", "", { class: "fas fa-ban text-sm text-black" }), 
+          { class: "w-8 h-8 rounded-full border-2 border-black flex items-center justify-center hover:bg-gray-100 transition ml-3" }
+        ), {
+        class: "cursor-pointer",
         title: "Bloquer le contact",
         onclick: () => {
           confirmAction("Bloquer ce contact ?", () => {
@@ -295,8 +312,12 @@ export const openDiscussion = requireAuth((discussion, layout, mainContent, disc
           });
         }
       }),
-      newElement("span", newElement("i", "", { class: "fas fa-user-times text-sm" }), {
-        class: "cursor-pointer ml-3",
+      newElement("span", 
+        newElement("div", 
+          newElement("i", "", { class: "fas fa-user-times text-sm text-red-500" }), 
+          { class: "w-8 h-8 rounded-full border-2 border-red-500 flex items-center justify-center hover:bg-red-50 transition ml-3" }
+        ), {
+        class: "cursor-pointer",
         title: "Supprimer le contact",
         onclick: () => {
           confirmAction("Supprimer ce contact ?", () => {
@@ -304,6 +325,7 @@ export const openDiscussion = requireAuth((discussion, layout, mainContent, disc
             if (idx !== -1) {
               discussions.splice(idx, 1);
               saveUserData(discussions, groupes, currentUser.id);
+              import('./main.js').then(m => m.showMainInterface());
               layout.replaceChild(mainContent, layout.children[2]);
             }
           });
@@ -616,3 +638,5 @@ export function loadUserData(userId) {
     lastUpdated: new Date().toISOString()
   };
 }
+
+import('./main.js').then(m => m.showMainInterface());

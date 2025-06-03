@@ -104,7 +104,18 @@ export function showAddContactForm(discussions, groupes, layout, sidebar) {
 
     saveData(discussions, groupes);
 
-refreshMessagesView();
+    // Réinitialiser les champs
+    contactFirstNameInput.value = "";
+    contactNameInput.value = "";
+    contactPhoneInput.value = "";
+
+    // Afficher le popup de succès
+    showPopup("Contact ajouté avec succès !");
+    setTimeout(() => {
+      import('./main.js').then(m => m.showMainInterface());
+    }, 500);
+
+    
   });
 
   const enhancedSearchInput = createEnhancedSearchInput("Recherche", discussions);
